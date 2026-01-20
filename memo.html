@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>브라우저 메모장</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 1rem;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    #editor {
+      width: 100%;
+      min-height: 300px;
+      padding: 1rem;
+      background-color: #f2f2f2;
+      box-sizing: border-box;
+    }
+
+    #editor:focus {
+      outline: none;
+    }
+
+    .button-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .group-label {
+      font-size: 0.7rem;
+      color: #666;
+      white-space: nowrap;
+    }
+
+    button {
+      font-size: 0.7rem;
+      border: none;
+      background: none;
+      cursor: pointer;
+      padding: 0.2rem 0.4rem;
+    }
+
+    button:hover {
+      background-color: #e0e0e0;
+      border-radius: 4px;
+    }
+
+    #stats {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      font-size: 0.7rem;
+      color: #444;
+      background: #f7f7f7;
+      padding: 0.6rem 0.8rem;
+      border-radius: 6px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+      line-height: 1.4;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 메모 입력 영역 -->
+  <div id="editor" contenteditable></div>
+
+  <!-- 버튼 영역 -->
+  <div style="margin-top:1rem;">
+    <div class="button-group">
+      <span class="group-label">[입력]</span>
+      <button onclick="replaceBullet()">•개요(--)</button>
+      <button onclick="boldText()">B볼드(**)</button>
+      <button onclick="convertToPlainText()">↺ 플레인텍스트</button>
+      <button onclick="insertDate()">🕒 날짜</button>
+    </div>
+
+    <div class="button-group">
+      <span class="group-label">[동작]</span>
+      <button onclick="copyText()">📋 텍스트복사</button>
+      <button onclick="copyAndOpenKeep()">＠ Google Keep</button>
+      <button onclick="clearEditor()">✖ 전체삭제</button>
+    </div>
+  </div>
+
+  <!-- 통계 영역 -->
+  <div id="stats"></div>
+
+  <script>
+    const editor = document.getElementById('editor');
+    const stats = document.getElementById('stats');
+
+    function replaceBullet() {
+      editor.innerHTML = editor.innerHTML.replace(/--/g, '•');
+      updateStats();
+    }
+
+    function boldText() {
+      editor.innerHTML = editor.innerHTML.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+      updateStats();
+    }
+
+    function insertDate() {
+      const now = new Date();
+      const yy = String(now.getFullYear()).slice(2);
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const hh = String(now.getHours()).padStart(2, '0');
+      const min = String(now.getMinutes()).padStart(2, '0');
+      const dateText = `${yy}年${mm}月${dd}日 ${hh}:${min}`;
+      const html = `<span style="font-size:0.7em;background:#e0e0e0;padding:0.1em 0.4em;border-radius:4px;">${dateText}</span><br><br>`;
+      document.execCommand('insertHTML', false, html);
+      updateStats();
+    }
+
+    function copyText() {
+      const textarea = document.createElement('textarea');
+      textarea.value = editor.innerText;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      alert('텍스트가 복사되었다');
+    }
+
+    function copyAndOpenKeep() {
+      const textarea = document.createElement('textarea');
+      textarea.value = editor.innerText;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      window.open('https://keep.google.com/', '_blank');
+    }
+
+    function clearEditor() {
+      editor.innerText = '';
+      updateStats();
+    }
+
+    function convertToPlainText() {
+      let plain = editor.innerText;
+      plain = plain.replace(/•/g, '');
+      editor.innerText = plain;
+      updateStats();
+    }
+
+    function updateStats() {
+      const text = editor.innerText;
+      const totalChars = text.length;
+      const noSpaceChars = text.replace(/\s/g, '').length;
+      const page200 = (totalChars / 200).toFixed(2);
+      const pageHwp = (totalChars / 1750).toFixed(2);
+      const pageBook = (totalChars / 650).toFixed(2);
+      const sentenceCount = (text.match(/[.!?]/g) || []).length;
+      const paragraphCount = text.trim() ? text.trim().split(/\n+/).length : 0;
+
+      stats.innerHTML = `
+        <div>총글자수: ${totalChars}자 · 공백제외: ${noSpaceChars}자</div>
+        <div>200원고지: ${page200}장 · 아래한글: ${pageHwp}장 · 신국판: ${pageBook}장</div>
+        <div>문장개수(종결부호개수): ${sentenceCount}개 · 문단개수: ${paragraphCount}개</div>
+      `;
+    }
+
+    editor.addEventListener('input', updateStats);
+
+    window.addEventListener('DOMContentLoaded', () => {
+      editor.focus();
+    });
+
+    updateStats();
+  </script>
+
+</body>
+</html>
